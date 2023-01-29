@@ -1,0 +1,146 @@
+<html>
+    <head>
+        <script src="https://jsuites.net/v4/jsuites.js"></script>
+        <link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
+        <script src="https://cdn.jsdelivr.net/npm/@jsuites/cropper/cropper.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@jsuites/cropper/cropper.min.css" type="text/css" />
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <style>
+            body {
+                margin: 0px;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+            .header {
+                height: 60px; 
+                color: rgb(250, 250, 252);
+                width: 100%;
+                background-color: rgb(0, 119, 255);
+                text-align: center;
+                line-height: 60px;
+                font-size: 30px;
+                font-weight: 700;
+            }
+            .headersub {
+                height: 8px;
+                background-color: rgb(0, 119, 255);
+                margin-top: 4px;
+            }
+            .btn-search {
+                width: 200px;
+                height: 50px;
+                font-size: 20px;
+                font-weight: 700;
+                background-color: rgb(0, 119, 255);
+                color: white;
+                border: none;
+            }
+            .image_result {
+                width: 250px;
+            }
+
+            .title {
+                width: 250px;
+                text-align: center;
+                display: block;
+                padding: 10px;
+                font-size: 20px;
+                font-weight: 700;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            ĐỒ ÁN MÔN HỌC - TÌM KIẾM THÔNG TIN THỊ GIÁC
+        </div>
+        <div class="headersub">
+        </div>
+        <center>
+            <div style="margin: auto; display: inline-block;">
+                <div id="image-cropper" style="border:1px solid #ccc; margin: 5px; float: left;"></div>
+                <div id="image-cropper-result" style="float: left;"><img id="my-image" style="width:120px; height:120px; margin: 5px;"></div>
+            </div>
+            <p>
+                <button type="button" onclick="searching()" class="btn-search">TÌM KIẾM</button>
+                <input type="button" style="display:none" value="TÌM KIẾM" onclick="searching()" id="image-getter" class="jbutton dark btn-search"></p>
+        </center>
+
+        <div style="width: 100%" id="result">
+                
+                
+        </div>
+      
+    </body>
+<script>
+cropper(document.getElementById('image-cropper'), {
+    area: [ 280, 280 ],
+    crop: [ 150, 150 ],
+})
+ 
+document.getElementById('image-getter').onclick = function() {
+    document.getElementById('image-cropper-result').children[0].src =
+        document.getElementById('image-cropper').crop.getCroppedImage().src;
+}
+
+
+function searching(){
+    document.getElementById("image-getter").click();
+    const image = document.getElementById('my-image');
+    // Get the remote image as a Blob with the fetch API
+    let base64String = "";
+    fetch(image.src)
+        .then((res) => res.blob())
+        .then((blob) => {
+            // Read the Blob as DataURL using the FileReader API
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              //  console.log(reader.result);
+                // Logs data:image/jpeg;base64,wL2dvYWwgbW9yZ...
+
+                // Convert to Base64 string
+                base64String = reader.result
+                console.log("base64String: ", base64String);
+                // Logs wL2dvYWwgbW9yZ...
+
+                const arrayBase64 = base64String.split(",");
+                if(arrayBase64.length === 2) {
+                    const formData = new FormData();
+                    formData.append('base64Image', arrayBase64[1]);
+
+                    axios({
+                            method: "post",
+                            url: "http://127.0.0.1:5000/searching",
+                            data: formData,
+                            
+                            })
+                            .then(function (response) {
+                                //handle success
+                                console.log(response);
+                                var bodyresult = "";
+                                for(var i =0; i < response.data.length; i++) {
+                                    console.log("https://zeus.robots.ox.ac.uk/oxfordbuildings/dyn_image/?id=oxc1_"+response.data[i].path)
+
+                                    bodyresult +=   "<div style='width: fit-content; float: left'>"+
+                                                        "<img class='image_result' src='https://zeus.robots.ox.ac.uk/oxfordbuildings/dyn_image/?id=oxc1_"+response.data[i].path+"'><br>"+
+                                                        "<span class='title'>"+response.data[i].trust+"</span>"+
+                                                    "</div>"
+
+                                }
+
+                                document.getElementById("result").innerHTML = bodyresult;
+                            })
+                            .catch(function (response) {
+                                //handle error
+                                console.log(response);
+                            });
+                } else {
+                    alert("Dữ liệu đầu vào không hợp lệ vui lòng kiếm tra lại")
+                }
+            };
+            reader.readAsDataURL(blob);
+        });
+
+   
+ 
+}
+</script>
+</html>
